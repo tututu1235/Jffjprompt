@@ -9,12 +9,12 @@ app.use(express.json());
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${GEMINI_API_KEY}`;
 
-// ⛳ Base check
+// ✅ Root check
 app.get("/", (req, res) => {
-  res.send("✅ Gemini Pro Vision API is running!");
+  res.send("✅ Gemini Prompt API (Vision) is running!");
 });
 
-// 🚀 Main AI handler
+// 🚀 Main Gemini POST endpoint
 app.post("/gemini", async (req, res) => {
   const { prompt, imageUrl } = req.body;
 
@@ -25,23 +25,27 @@ app.post("/gemini", async (req, res) => {
   try {
     const parts = [];
 
-    // If image given, fetch + convert to base64
+    // 🔁 If image URL provided → fetch & convert to base64
     if (imageUrl) {
-      const imageRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
-      const base64Image = Buffer.from(imageRes.data).toString("base64");
+      try {
+        const imageRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
+        const base64Image = Buffer.from(imageRes.data).toString("base64");
 
-      parts.push({
-        inline_data: {
-          mime_type: "image/jpeg",
-          data: base64Image
-        }
-      });
+        parts.push({
+          inline_data: {
+            mime_type: "image/jpeg",
+            data: base64Image
+          }
+        });
+      } catch (err) {
+        return res.status(500).json({ error: "❌ Failed to fetch or convert image." });
+      }
     }
 
-    // Add the prompt text
+    // ⌨️ Add prompt
     parts.push({ text: prompt });
 
-    const response = await axios.post(GEMINI_API_URL, {
+    const geminiRes = await axios.post(GEMINI_API_URL, {
       contents: [
         {
           role: "user",
@@ -50,18 +54,19 @@ app.post("/gemini", async (req, res) => {
       ]
     });
 
-    const result = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!result) return res.status(500).json({ error: "❌ No response from Gemini." });
+    const result = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!result) return res.status(500).json({ error: "❌ Gemini returned empty response." });
 
     res.json({ result: result.trim() });
 
   } catch (err) {
-    console.error("❌ Error:", err.message);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Gemini API error:", err.message);
+    res.status(500).json({ error: "❌ Gemini request failed." });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Gemini Vision server running on port ${PORT}`);
+  console.log("✅ Gemini Prompt API (Vision) running on port", PORT);
 });
