@@ -7,28 +7,33 @@ app.use(cors());
 app.use(express.json());
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${GEMINI_API_KEY}`;
 
-// ✅ Root check
+const GEMINI_MODEL = "gemini-1.5-flash-latest"; // Gemini 2.5 Flash
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
 app.get("/", (req, res) => {
-  res.send("✅ Gemini Prompt API (Vision) is running!");
+  res.send("✅ Gemini 2.5 Flash API is running!");
 });
 
-// 🚀 Main Gemini POST endpoint
 app.post("/gemini", async (req, res) => {
   const { prompt, imageUrl } = req.body;
 
   if (!prompt && !imageUrl) {
-    return res.status(400).json({ error: "❌ Prompt or image URL required." });
+    return res.status(400).json({ error: "❌ Prompt or image required." });
   }
 
   try {
     const parts = [];
 
-    // 🔁 If image URL provided → fetch & convert to base64
+    // 🖼 Handle image if present
     if (imageUrl) {
       try {
-        const imageRes = await axios.get(imageUrl, { responseType: "arraybuffer" });
+        const imageRes = await axios.get(imageUrl, {
+          responseType: "arraybuffer",
+          headers: {
+            "User-Agent": "Mozilla/5.0"
+          }
+        });
         const base64Image = Buffer.from(imageRes.data).toString("base64");
 
         parts.push({
@@ -37,26 +42,22 @@ app.post("/gemini", async (req, res) => {
             data: base64Image
           }
         });
-      } catch (err) {
-        return res.status(500).json({ error: "❌ Failed to fetch or convert image." });
+      } catch (error) {
+        console.error("❌ Image fetch error:", error.message);
+        return res.status(500).json({ error: "❌ Failed to fetch image." });
       }
     }
 
-    // ⌨️ Add prompt
     parts.push({ text: prompt });
 
-    const geminiRes = await axios.post(GEMINI_API_URL, {
-      contents: [
-        {
-          role: "user",
-          parts
-        }
-      ]
+    const response = await axios.post(GEMINI_URL, {
+      contents: [{ role: "user", parts }]
     });
 
-    const result = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!result) return res.status(500).json({ error: "❌ Gemini returned empty response." });
+    const result = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!result) {
+      return res.status(500).json({ error: "❌ Gemini returned no result." });
+    }
 
     res.json({ result: result.trim() });
 
@@ -68,5 +69,5 @@ app.post("/gemini", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("✅ Gemini Prompt API (Vision) running on port", PORT);
+  console.log(`✅ Gemini 2.5 Flash server running on port ${PORT}`);
 });
