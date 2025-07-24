@@ -1,7 +1,7 @@
 {
-  "name": "gemini-pro-vision-api",
-  "version": "1.0.0",
-  "description": "Express server using Gemini Pro Vision (image + text support)",
+  "name": "gemini-prompt-api",
+  "version": "2.0.0",
+  "description": "Gemini 2.5 Pro Vision API with image + text prompt support",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
