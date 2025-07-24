@@ -1,7 +1,7 @@
 {
-  "name": "gemini-prompt-api",
-  "version": "2.0.0",
-  "description": "Gemini 2.5 Pro Vision API with image + text prompt support",
+  "name": "gemini-2.5-flash-api",
+  "version": "1.0.0",
+  "description": "Gemini 2.5 Flash API with image and text support",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
